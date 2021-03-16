@@ -9,9 +9,9 @@
   "author": "Bartosz Gamza",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.1",
     "cheerio": "^1.0.0-rc.5",
     "express": "^4.17.1",
-    "node-image-downloader": "^1.0.7",
-    "request": "^2.88.2"
+    "node-image-downloader": "^1.0.7"
   }
 }
