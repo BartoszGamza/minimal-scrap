@@ -21,15 +21,26 @@ function extractLinks ($, objects, requireBlogPage = false) {
 }
 
 async function getLinksBySelector (url, selector, blogPages = false) {
-    return axios.get(url).then(response => {
-        const $ = cheerio.load(response.data)
+    return axios.get(url).then(({data}) => {
+        const $ = cheerio.load(data)
         const expandableObjects = $(selector)
         return extractLinks($, expandableObjects, blogPages)
     }) 
 }
 
-async function getBlogPages (url) {
-
+async function parseBlogPost (url) {
+    return axios.get(url).then(({data}) => {
+        const $ = cheerio.load(data)
+        const post = {
+            title: $('.post-title').text(),
+            date: $('.published').attr('title'),
+            images: []
+        }
+        $('.post-body').find('img').each((_, el) => {
+            post.images.push($(el).attr('src'))
+        })
+        return post
+    })
 }
 
 const url = 'http://www.minimalb.art/'
@@ -37,14 +48,11 @@ const collapisbleObjectSelector = '.post-count-link'
 const linkSelector = 'a'
 
 getLinksBySelector(url, collapisbleObjectSelector).then(historicalLinks => {
-    // console.log(historicalLinks)
-    const result = async () => Promise.all(historicalLinks.map(async link => {
+    Promise.all(historicalLinks.map(async link => {
         return getLinksBySelector(link, linkSelector, true)
-    }))
-
-    result().then(res => {
-        const flattened = [].concat.apply([], res)
+    })).then(allPostLinks => {
+        const flattened = [].concat.apply([], allPostLinks)
         const uniq = [...new Set(flattened)]
-        console.log(uniq)
-    })
+        Promise.all(uniq.map(async post => parseBlogPost(post))).then(posts => console.log(posts))
+    })    
 })
