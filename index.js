@@ -1,6 +1,6 @@
-// const express = require('express')
 const axios = require('axios')
 const cheerio = require('cheerio')
+const fs = require('fs')
 const download = require('node-image-downloader')
 
 function extractLinks ($, objects, requireBlogPage = false) {
@@ -31,9 +31,13 @@ async function getLinksBySelector (url, selector, blogPages = false) {
 async function parseBlogPost (url) {
     return axios.get(url).then(({data}) => {
         const $ = cheerio.load(data)
+        const getPostDate = () => {
+            const date = new Date($('.published').attr('title'))
+            return [date.getFullYear(), date.getMonth(), date.getDate()].join('-')
+        } 
         const post = {
-            title: $('.post-title').text(),
-            date: $('.published').attr('title'),
+            title: $('.post-title').text().replace(/(\r\n|\n|\r)/gm, ''),
+            date: getPostDate(),
             images: []
         }
         $('.post-body').find('img').each((_, el) => {
@@ -41,6 +45,28 @@ async function parseBlogPost (url) {
         })
         return post
     })
+}
+
+function getPath (date, title) {
+    return  `./downloads/${date}-${title.split(' ').map(word => word.toLowerCase()).join('-')}`
+}
+
+async function createDirectory (date, title) {
+    return fs.mkdir(getPath(date, title), { recursive: true }, ( err ) => {
+        if (err) {
+            console.log(err)
+        }
+    })
+}
+
+async function downloadImages (imageLinks, dest) {
+    download({
+        imgs: imageLinks.map((link, index) => ({
+            uri: link,
+            name: index
+        })),
+        dest,
+    }).then(() => console.log(dest, 'downloaded')).catch(err => console.log(dest, err))
 }
 
 const url = 'http://www.minimalb.art/'
@@ -53,6 +79,14 @@ getLinksBySelector(url, collapisbleObjectSelector).then(historicalLinks => {
     })).then(allPostLinks => {
         const flattened = [].concat.apply([], allPostLinks)
         const uniq = [...new Set(flattened)]
-        Promise.all(uniq.map(async post => parseBlogPost(post))).then(posts => console.log(posts))
+        console.log('posts acquired')
+        Promise.all(uniq.map(async post => parseBlogPost(post))).then(posts => {
+            console.log('posts parsed')
+            Promise.all(posts.map(async ({date, title}) => createDirectory(date, title))).then(() => {
+                console.log('directories created')
+                Promise.all(posts.map(post => downloadImages(post.images, getPath(post.date, post.title)))).then(
+                    () => console.log('done'))
+            })
+        })
     })    
 })
