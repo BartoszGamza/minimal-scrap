@@ -37,7 +37,7 @@ async function parseBlogPost (url) {
             return [date.getFullYear(), date.getMonth(), date.getDate()].join('-')
         } 
         const post = {
-            title: $('.post-title').text().replace(/(\r\n|\n|\r)/gm, ''),
+            title: $('.post-title').text().trim().replace(/(\r\n|#|\n|\r)/gm, ''),
             date: getPostDate(),
             images: []
         }
