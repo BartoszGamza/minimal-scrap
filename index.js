@@ -2,6 +2,7 @@ const axios = require('axios')
 const cheerio = require('cheerio')
 const fs = require('fs')
 const download = require('node-image-downloader')
+const mustache = require('mustache')
 
 function extractLinks ($, objects, requireBlogPage = false) {
     const targetArray = []
@@ -47,8 +48,33 @@ async function parseBlogPost (url) {
     })
 }
 
-function getPath (date, title) {
-    return  `./downloads/${date}-${title.split(' ').map(word => word.toLowerCase()).join('-')}`
+function writeBlogPost (post) {
+    const path = getPath(post.date, post.title, 'content')
+    const template = `---
+    title: {{title}}
+    createdAt: {{date}}
+---
+
+{{#images}}
+<img src="{{{.}}}">
+{{/images}}`
+
+    const paresedPost = {
+        ...post,
+        images: post.images.map(imageUrl => {
+            const imageName = imageUrl.split('/').pop()
+            const folderName = path.split('./content/')[1]
+            return `/posts/${folderName}/${imageName}`
+        })
+    }
+
+    const content = mustache.render(template, paresedPost)
+    fs.writeFileSync(path + '.md', content)
+
+}
+
+function getPath (date, title, origin = 'downloads') {
+    return  `./${origin}/${date}-${title.split(' ').map(word => word.toLowerCase()).join('-')}`
 }
 
 async function createDirectory (date, title) {
@@ -87,6 +113,7 @@ getLinksBySelector(url, collapisbleObjectSelector).then(historicalLinks => {
                 Promise.all(posts.map(post => downloadImages(post.images, getPath(post.date, post.title)))).then(
                     () => console.log('done'))
             })
+            posts.forEach(post => writeBlogPost(post))
         })
     })    
 })
