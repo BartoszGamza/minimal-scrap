@@ -34,7 +34,7 @@ async function parseBlogPost (url) {
         const $ = cheerio.load(data)
         const getPostDate = () => {
             const date = new Date($('.published').attr('title'))
-            return [date.getFullYear(), date.getMonth(), date.getDate()].join('-')
+            return [date.getFullYear(), date.getMonth() + 1, date.getDate()].join('-')
         } 
         const post = {
             title: $('.post-title').text().trim().replace(/(\r\n|#|\n|\r)/gm, ''),
@@ -117,3 +117,6 @@ getLinksBySelector(url, collapisbleObjectSelector).then(historicalLinks => {
         })
     })    
 })
+
+//  cp -a downloads/. ../minimalb-art-cms/static/posts/
+//  cp -a content/. ../minimalb-art-cms/content/posts/
