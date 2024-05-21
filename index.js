@@ -117,6 +117,3 @@ getLinksBySelector(url, collapisbleObjectSelector).then(historicalLinks => {
         })
     })    
 })
-
-//  cp -a downloads/. ../minimalb-art-cms/static/posts/
-//  cp -a content/. ../minimalb-art-cms/content/posts/
